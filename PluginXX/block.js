@@ -1,25 +1,52 @@
 var blockway,blockkey;
-
+var blockurl;
+var pass = false;
 chrome.webRequest.onBeforeRequest.addListener(
   function(details) {
-	var keywords = blockkey.split(/[\s,]+/g);
-	for (keyword in keywords) {
-		//alert(keywords[keyword]);
-		console.log(keywords[keyword] + " " + blockway);
+	if (blockway == 'hard') {
+		var keywords = blockkey.split(/[\s,]+/g);
+		for (keyword in keywords) {
 		if((details.url.indexOf(keywords[keyword]) != -1))
 		{
-			if (blockway == 'hard') return {cancel: true};
-			else
-			{
-				return {cancel: false};
-			}
+			pass = false;
+			return {cancel: true};
 			break;
 		}
+	}
 	}
 	return {cancel: false};
   },
   {urls: ["*://*/*"]},
   ["blocking"]
+);
+
+chrome.webRequest.onCompleted.addListener(
+  function(details) {
+  	// compute a page hash etc, store it
+  	pass = false;
+  },
+{
+  urls: ['*://*/*'],
+  types: ['main_frame']
+}
+);
+
+chrome.tabs.onUpdated.addListener(function(tabId,changeInfo,tab)
+{
+	// alert(pass);
+	if (blockway == 'soft') {
+	if (pass) return;
+		var keywords = blockkey.split(/[\s,]+/g);
+		for (keyword in keywords)
+		{
+			if (changeInfo.url.indexOf(keywords[keyword]) != -1) {
+				blockurl = changeInfo.url;
+				chrome.tabs.update({url: chrome.extension.getURL("stop.html")});
+				break;
+			}
+		}
+	}
+}
 );
 
 function resetWay()
